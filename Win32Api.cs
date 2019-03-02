@@ -114,9 +114,10 @@ namespace LnkUtils
 		STGM_DELETEONRELEASE = 0x4000000
 	}
 
-	[Flags()]
+	[Flags]
 	public enum SLR_FLAGS
 	{
+		SLR_NONE = 0x0,
 		SLR_NO_UI = 0x1,
 		SLR_ANY_MATCH = 0x2,
 		SLR_NOUPDATE = 0x8,
@@ -138,13 +139,13 @@ namespace LnkUtils
 	[StructLayout(LayoutKind.Sequential, CharSet=CharSet.Auto)]
 	struct WIN32_FIND_DATA
 	{
-		public uint dwFileAttributes;
+		public FileAttributes dwFileAttributes;
 		public System.Runtime.InteropServices.ComTypes.FILETIME ftCreationTime;
 		public System.Runtime.InteropServices.ComTypes.FILETIME ftLastAccessTime;
 		public System.Runtime.InteropServices.ComTypes.FILETIME ftLastWriteTime;
 		public uint nFileSizeHigh;
 		public uint nFileSizeLow;
-		public uint dwReserved0;
+		public ReparseTagType dwReserved0;
 		public uint dwReserved1;
 		[MarshalAs(UnmanagedType.ByValTStr, SizeConst=260)]
 		public string cFileName;
@@ -153,7 +154,7 @@ namespace LnkUtils
 	}
 
 	/// <summary>IShellLink.GetPath fFlags: Flags that specify the type of path information to retrieve</summary>
-	[Flags()]
+	[Flags]
 	enum SLGP_FLAGS {
 		SLGP_NONE = 0x0,
 		/// <summary>Retrieves the standard short (8.3 format) file name</summary>
@@ -163,5 +164,114 @@ namespace LnkUtils
 		/// <summary>Retrieves the raw path name. A raw path is something that might not exist and may include environment variables that need to be expanded</summary>
 		SLGP_RAWPATH = 0x4,
 		SLGP_RELATIVEPRIORITY = 0x8
+	}
+
+	/// <summary>
+	/// File attributes are metadata values stored by the file system on disk and are used by the system and are available to developers via various file I/O APIs.
+	/// </summary>
+	[Flags]
+	enum FileAttributes : uint
+	{
+		None = 0x00000000,
+
+		/// <summary>
+		/// A file that is read-only. Applications can read the file, but cannot write to it or delete it. This attribute is not honored on directories. For more information, see "You cannot view or change the Read-only or the System attributes of folders in Windows Server 2003, in Windows XP, or in Windows Vista".
+		/// </summary>
+		Readonly = 0x00000001,
+
+		/// <summary>
+		/// The file or directory is hidden. It is not included in an ordinary directory listing.
+		/// </summary>
+		Hidden = 0x00000002,
+
+		/// <summary>
+		/// A file or directory that the operating system uses a part of, or uses exclusively.
+		/// </summary>
+		System = 0x00000004,
+
+		/// <summary>
+		/// The handle that identifies a directory.
+		/// </summary>
+		Directory = 0x00000010,
+
+		/// <summary>
+		/// A file or directory that is an archive file or directory. Applications typically use this attribute to mark files for backup or removal.
+		/// </summary>
+		Archive = 0x00000020,
+
+		/// <summary>
+		/// This value is reserved for system use.
+		/// </summary>
+		Device = 0x00000040,
+
+		/// <summary>
+		/// A file that does not have other attributes set. This attribute is valid only when used alone.
+		/// </summary>
+		Normal = 0x00000080,
+
+		/// <summary>
+		/// A file that is being used for temporary storage. File systems avoid writing data back to mass storage if sufficient cache memory is available, because typically, an application deletes a temporary file after the handle is closed. In that scenario, the system can entirely avoid writing the data. Otherwise, the data is written after the handle is closed.
+		/// </summary>
+		Temporary = 0x00000100,
+
+		/// <summary>
+		/// A file that is a sparse file.
+		/// </summary>
+		SparseFile = 0x00000200,
+
+		/// <summary>
+		/// A file or directory that has an associated reparse point, or a file that is a symbolic link.
+		/// </summary>
+		ReparsePoint = 0x00000400,
+
+		/// <summary>
+		/// A file or directory that is compressed. For a file, all of the data in the file is compressed. For a directory, compression is the default for newly created files and subdirectories.
+		/// </summary>
+		Compressed = 0x00000800,
+
+		/// <summary>
+		/// The data of a file is not available immediately. This attribute indicates that the file data is physically moved to offline storage. This attribute is used by Remote Storage, which is the hierarchical storage management software. Applications should not arbitrarily change this attribute.
+		/// </summary>
+		Offline = 0x00001000,
+
+		/// <summary>
+		/// The file or directory is not to be indexed by the content indexing service.
+		/// </summary>
+		NotContentIndexed = 0x00002000,
+
+		/// <summary>
+		/// A file or directory that is encrypted. For a file, all data streams in the file are encrypted. For a directory, encryption is the default for newly created files and subdirectories.
+		/// </summary>
+		Encrypted = 0x00004000,
+
+		/// <summary>
+		/// This value is reserved for system use.
+		/// </summary>
+		Virtual = 0x00010000,
+
+		/// <summary>
+		/// When this attribute is set, it means that the file or directory has no physical representation on the local system; the item is virtual.
+		/// </summary>
+		RecallOnOpen = 0x00040000,
+
+		/// <summary>
+		/// When this attribute is set, it means that the file or directory is not fully present locally.
+		/// </summary>
+		RecallOnDataAccess = 0x00400000,
+	}
+
+	enum ReparseTagType : uint
+	{
+		IO_REPARSE_TAG_CSV = 0x80000009,
+		IO_REPARSE_TAG_DEDUP = 0x80000013,
+		IO_REPARSE_TAG_DFS = 0x8000000A,
+		IO_REPARSE_TAG_DFSR = 0x80000012,
+		IO_REPARSE_TAG_HSM = 0xC0000004,
+		IO_REPARSE_TAG_HSM2 = 0x80000006,
+		IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003,
+		IO_REPARSE_TAG_NFS = 0x80000014,
+		IO_REPARSE_TAG_SIS = 0x80000007,
+		IO_REPARSE_TAG_SYMLINK = 0xA000000C,
+		IO_REPARSE_TAG_WIM = 0x80000008
 	}
 }

@@ -9,26 +9,32 @@ namespace LnkUtils
 	{
 		static void Main(string[] args)
 		{
-			string target = args.Length > 0 ? args[0] : null;
-			bool isFolder = false;
+			if (args.Length < 1) {
+				Options.Usage();
+				return;
+			}
+			if (!Options.Parse(args)) {
+				return;
+			}
 
-			if (String.IsNullOrWhiteSpace(target)) {
-				target = Environment.CurrentDirectory;
+			bool isFolder = false;
+			string target = Options.Target;
+
+			if (Directory.Exists(target)) {
 				isFolder = true;
 			}
-			else {
-				if (Directory.Exists(target)) {
-					isFolder = true;
-				}
-				else if (Path.GetExtension(target) != ".lnk") {
-					Console.Error.Write("invalid shortcut file: "+target);
-					return;
-				}
+			else if (Path.GetExtension(target) != ".lnk" || !File.Exists(target)) {
+				Log.Error("invalid shortcut file: "+target);
+				return;
 			}
 
 			int count = 0;
 			if (isFolder) {
-				var iter = Directory.GetFiles(target,"*.lnk");
+				SearchOption so = Options.Recurse
+					? SearchOption.AllDirectories
+					: SearchOption.TopDirectoryOnly
+				;
+				var iter = Directory.GetFiles(target,"*.lnk",so);
 				foreach(string linkFile in iter) {
 					Check(linkFile);
 					count++;
@@ -38,36 +44,40 @@ namespace LnkUtils
 				Check(target);
 				count++;
 			}
-			Console.WriteLine("Checked "+count+" shortcuts");
+			Log.Message("Checked "+count+" shortcuts");
 		}
 
 		static void Check(string lnkFile)
 		{
-			if (!CheckShortcut(lnkFile)) {
-				Console.WriteLine("Bad Link "+lnkFile);
-			}
-		}
-
-		static bool CheckShortcut(string lnkPath)
-		{
-			if (!File.Exists(lnkPath)) {
-				return false;
-			}
-
 			IShellLinkW link = (IShellLinkW)new ShellLink();
-			((IPersistFile)link).Load(lnkPath,(int)STGM_FLAGS.STGM_READ);
-			string path = GetPath(link);
-			//Console.WriteLine("path = "+path);
-			//var result = link.Resolve(IntPtr.Zero,SLR_FLAGS.SLR_NO_UI);
-			//Console.WriteLine("Result = "+result);
-			return File.Exists(path);
-			// return result == 0;
+			((IPersistFile)link).Load(lnkFile,(int)STGM_FLAGS.STGM_READ);
+			string path = GetPath(link, out WIN32_FIND_DATA pathData);
+			string wdir = GetWorkingDirectory(link);
+
+			bool bad = false;
+			if (!File.Exists(path)) {
+				bad = true;
+				Log.Message("Bad Target  : "+lnkFile);
+			}
+
+			if (!File.Exists(path)) {
+				bad = true;
+				Log.Message("Bad Start In: "+lnkFile);
+			}
+
+			if (!bad && Options.ShowAll) {
+				Log.Message("Valid       : "+lnkFile);
+			}
+
+			if (Options.Verbose) {
+				PrintExtraData(path,wdir,pathData,bad);
+			}
 		}
 
-		static string GetPath(IShellLinkW link)
+		static string GetPath(IShellLinkW link, out WIN32_FIND_DATA data)
 		{
 			var sb = new StringBuilder(16384);
-			link.GetPath(sb,sb.Capacity,out WIN32_FIND_DATA data, SLGP_FLAGS.SLGP_NONE);
+			link.GetPath(sb,sb.Capacity,out data, SLGP_FLAGS.SLGP_NONE);
 			return sb.ToString();
 		}
 
@@ -77,27 +87,29 @@ namespace LnkUtils
 			link.GetWorkingDirectory(sb,sb.Capacity);
 			return sb.ToString();
 		}
+
+		static void PrintExtraData(string path,string wdir,WIN32_FIND_DATA data, bool isBad)
+		{
+			long size = (data.nFileSizeHigh << 32) + data.nFileSizeLow;
+			Log.Message(""
+				+ "Target      : "+(isBad ? "" : path)
+				+ "\nStart In    : "+(isBad ? "" : wdir)
+				+ "\nFileName    : "+(isBad ? "" : data.cFileName)
+				+ "\n8.3 FileName: "+(isBad ? "" : data.cAlternateFileName)
+				+ "\nSize        : "+(isBad ? "" : size.ToString("N0"))
+				+ "\nCreated     : "+(isBad ? "" : ConvertFileTime(data.ftCreationTime))
+				+ "\nModified    : "+(isBad ? "" : ConvertFileTime(data.ftLastWriteTime))
+				+ "\nAccessed    : "+(isBad ? "" : ConvertFileTime(data.ftLastAccessTime))
+				+ "\nAttributes  : "+(isBad ? "" : data.dwFileAttributes.ToString())
+				+ "\n"
+			);
+		}
+
+		static string ConvertFileTime(System.Runtime.InteropServices.ComTypes.FILETIME ft)
+		{
+			long time = ((long)ft.dwHighDateTime << 32) + ft.dwLowDateTime;
+			var dto = DateTimeOffset.FromFileTime(time).ToLocalTime();
+			return dto.ToString();
+		}
 	}
 }
-
-
-//WshShell wsh = new WshShell();
-//IWshRuntimeLibrary.IWshShortcut shortcut = wsh.CreateShortcut(
-//    Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\shorcut.lnk") as IWshRuntimeLibrary.IWshShortcut;
-//shortcut.Arguments = "";
-//shortcut.TargetPath = "c:\\app\\myftp.exe";
-//// not sure about what this is for
-//shortcut.WindowStyle = 1;
-//shortcut.Description = "my shortcut description";
-//shortcut.WorkingDirectory = "c:\\app";
-//shortcut.IconLocation = "specify icon location";
-//shortcut.Save();
-
-//using Shell32;
-//using IWshRuntimeLibrary;
-//
-//var wsh = new IWshShell_Class();
-//IWshRuntimeLibrary.IWshShortcut shortcut = wsh.CreateShortcut(
-//    Environment.GetFolderPath(Environment.SpecialFolder.Desktop) + "\\shorcut2.lnk") as IWshRuntimeLibrary.IWshShortcut;
-//shortcut.TargetPath = @"C:\Users\Zimin\Desktop\test folder";
-//shortcut.Save();
