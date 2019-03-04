@@ -1,5 +1,5 @@
 # Link Utilities #
-A small utility for working with Windows shortcut (.lnk) files
+A utility for working with Windows shortcut (.lnk) files
 
 ## Usage ##
 
