@@ -111,5 +111,16 @@ namespace LnkUtils
 			var dto = DateTimeOffset.FromFileTime(time).ToLocalTime();
 			return dto.ToString();
 		}
+
+		static void Create()
+		{
+			IShellLinkW link = (IShellLinkW)new ShellLink();
+			if (!String.IsNullOrWhiteSpace(Options.Comment)) {
+				link.SetDescription(Options.Comment);
+			}
+			if (!String.IsNullOrWhiteSpace(Options.IconPath)) {
+				link.SetIconLocation(Options.IconPath,0);
+			}
+		}
 	}
 }

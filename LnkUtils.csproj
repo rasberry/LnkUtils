@@ -5,4 +5,8 @@
     <TargetFramework>net472</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+
 </Project>
