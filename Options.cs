@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows.Forms;
 
 namespace LnkUtils
@@ -9,23 +10,28 @@ namespace LnkUtils
 		{
 			Log.Message("Usage: "+nameof(LnkUtils)+" (command) [options]"
 				+"\n Commands:"
+				+"\n"
 				+"\n  Check (path to folder or .lnk file) [options]"
-				+"\n   tests link files for bad paths"
+				+"\n  - tests link files for bad paths"
+				+"\n"
 				+"\n  Check Options:"
 				+"\n  -r        recurse into sub-folders"
 				+"\n  -v        print extra information about links"
 				+"\n  -a        show all links not just bad ones"
 				+"\n"
 				+"\n  Create [options]"
-				+"\n   create a new link"
+				+"\n  - create a new link"
+				+"\n"
 				+"\n  Create Options:"
 				+"\n  -t (path)          path to target"
+				+"\n  -n (path)          name of link file (defaults to 'target file name'.lnk)"
 				+"\n  -c (text)          comment"
 				+"\n  -s (path)          start in path"
-				+"\n  -k (key)           shortcut key"
-				+"\n  -r (run)           starting window state"
+				// +"\n  -k (key)           shortcut key"
+				// +"\n  -r (run)           starting window state"
 				+"\n  -i (path) [index]  path to .ico file or .dll/.exe. index defaults to 0"
-				+"\n  -a                 enable run as administrator"
+				// +"\n  -a                 enable run as administrator"
+				+"\n  -f                 force create even if target doesn't exist"
 			);
 		}
 
@@ -37,7 +43,7 @@ namespace LnkUtils
 			{
 				string curr = args[a];
 				if (Action == Command.None) {
-					if (!Enum.TryParse<Command>(curr ?? "",out Action)) {
+					if (!Enum.TryParse<Command>(curr ?? "",true,out Action)) {
 						Log.Error("Invalid action "+curr);
 						return false;
 					}
@@ -58,7 +64,10 @@ namespace LnkUtils
 				}
 				else if (Action == Command.Create) {
 					if (curr == "-t" && ++a < len) {
-						Target = args[a];
+						Target = Path.GetFullPath(args[a]);
+					}
+					else if (curr == "-n" && ++a < len) {
+						LnkFileName = args[a];
 					}
 					else if (curr == "-c" && ++a < len) {
 						Comment = args[a];
@@ -81,6 +90,10 @@ namespace LnkUtils
 					}
 					else if (curr == "-a") {
 						EnableAdmin = true;
+						//TODO not used yet
+					}
+					else if (curr == "-f") {
+						Force = true;
 					}
 				}
 			}
@@ -104,6 +117,8 @@ namespace LnkUtils
 		public static string IconPath = null;
 		public static int IconIndex = 0;
 		public static bool EnableAdmin = false;
+		public static string LnkFileName = null;
+		public static bool Force = false;
 
 	}
 }

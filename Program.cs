@@ -17,6 +17,30 @@ namespace LnkUtils
 				return;
 			}
 
+			try {
+				DoActions();
+			} catch(Exception e) {
+				#if DEBUG
+				Log.Error(e.ToString());
+				#else
+				log.Error(e.Message);
+				#endif
+			}
+		}
+
+		static void DoActions()
+		{
+
+			if (Options.Action == Options.Command.Check) {
+				ActionCheck();
+			}
+			else if (Options.Action == Options.Command.Create) {
+				ActionCreate();
+			}
+		}
+
+		static void ActionCheck()
+		{
 			bool isFolder = false;
 			string target = Options.Target;
 
@@ -90,9 +114,9 @@ namespace LnkUtils
 
 		static void PrintExtraData(string path,string wdir,WIN32_FIND_DATA data, bool isBad)
 		{
-			long size = (data.nFileSizeHigh << 32) + data.nFileSizeLow;
+			long size = ((long)data.nFileSizeHigh << 32) + data.nFileSizeLow;
 			Log.Message(""
-				+ "Target      : "+(isBad ? "" : path)
+				+   "Target      : "+(isBad ? "" : path)
 				+ "\nStart In    : "+(isBad ? "" : wdir)
 				+ "\nFileName    : "+(isBad ? "" : data.cFileName)
 				+ "\n8.3 FileName: "+(isBad ? "" : data.cAlternateFileName)
@@ -112,15 +136,70 @@ namespace LnkUtils
 			return dto.ToString();
 		}
 
-		static void Create()
+		static bool EndsWithIC(string subj, string test)
 		{
+			if (subj == null || test == null) { return false; }
+			return subj.EndsWith(test,StringComparison.OrdinalIgnoreCase);
+		}
+
+		static void ActionCreate()
+		{
+			if (String.IsNullOrWhiteSpace(Options.Target)) {
+				Log.Error("invalid path to target");
+				return;
+			}
+			bool isDirectory = false;
+			Log.Debug("force = "+Options.Force);
+			if (!Options.Force && !Exists(Options.Target,out isDirectory)) {
+				Log.Error("path to target doesn't exist");
+				return;
+			}
+			if (String.IsNullOrWhiteSpace(Options.LnkFileName)) {
+				Options.LnkFileName = Path.GetFileNameWithoutExtension(Options.Target);
+			}
+			if (!EndsWithIC(Options.LnkFileName,".lnk")) {
+				Options.LnkFileName += ".lnk";
+			}
+
 			IShellLinkW link = (IShellLinkW)new ShellLink();
 			if (!String.IsNullOrWhiteSpace(Options.Comment)) {
 				link.SetDescription(Options.Comment);
 			}
 			if (!String.IsNullOrWhiteSpace(Options.IconPath)) {
-				link.SetIconLocation(Options.IconPath,0);
+				link.SetIconLocation(Options.IconPath,Options.IconIndex);
 			}
+			if (!String.IsNullOrWhiteSpace(Options.StartIn)) {
+				link.SetWorkingDirectory(Options.StartIn);
+			}
+			link.SetPath(Options.Target);
+
+			Log.Debug("saving "+Options.LnkFileName);
+			((IPersistFile)link).Save(Options.LnkFileName,false);
+		}
+
+		static bool Exists(string path, out bool isDirectory)
+		{
+			isDirectory = false;
+			if (String.IsNullOrEmpty(path)) {
+				return false;
+			}
+			else if (File.Exists(path)) {
+				Log.Debug("File exists "+path);
+				return true;
+			}
+			else if (Directory.Exists(path)) {
+				Log.Debug("Directory exists "+path);
+				isDirectory = true;
+				return true;
+			}
+			else if (
+				path.EndsWith(Path.DirectorySeparatorChar.ToString())
+				|| path.EndsWith(Path.AltDirectorySeparatorChar.ToString())
+			) {
+				isDirectory = true;
+			}
+			Log.Debug("does not exist "+path);
+			return false;
 		}
 	}
 }
