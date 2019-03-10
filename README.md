@@ -28,5 +28,5 @@ Usage: LnkUtils (command) [options]
 ```
 
 ## Notes ##
-I came accross this gem while searching for information oniline - (MS-SHLLINK: Shell Link \(.LNK\) Binary File Format)[https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-shllink/16cb4ca1-9339-4d0c-a68d-bf1d6cc0f943]
+I came accross this gem while searching for information oniline - [MS-SHLLINK: Shell Link \(.LNK\) Binary File Format](https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-shllink/16cb4ca1-9339-4d0c-a68d-bf1d6cc0f943)
 Maybe a future version of this tool could expose a way to create lnk files directly using the published format instead of the win32 api.
